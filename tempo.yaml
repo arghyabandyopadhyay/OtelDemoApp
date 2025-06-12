@@ -1,0 +1,11 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 4318
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo/traces

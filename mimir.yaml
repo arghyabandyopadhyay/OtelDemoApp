@@ -1,0 +1,19 @@
+multitenancy_enabled: false
+
+server:
+  http_listen_port: 9009
+
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/data/tsdb
+
+compactor:
+  data_dir: /tmp/mimir/compactor
+
+limits:
+  max_label_names_per_series: 30
+  max_label_value_length: 2048
+
+memberlist:
+  join_members: []

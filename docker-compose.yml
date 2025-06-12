@@ -1,0 +1,76 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP.NET Core service.
+
+services:
+  collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "14317:4317"   # Host:Container (change host port to 14317)
+      - "4318:4318"
+      - "8889:8889"
+    depends_on:
+      - loki
+      - mimir
+      - tempo
+
+  loki:
+    image: grafana/loki:2.9.4
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+
+  mimir:
+    image: grafana/mimir:latest
+    ports:
+      - "9009:9009"
+    command: ["-config.expand-env=true", "-config.file=/etc/mimir.yaml"]
+    volumes:
+      - ./mimir.yaml:/etc/mimir.yaml
+
+  tempo:
+    image: grafana/tempo:latest
+    ports:
+      - "4319:4318"
+      - "3200:3200"
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+      - ./tempo_data:/tmp/tempo
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
+      - mimir
+      - tempo
+
+  otel-demo-app:
+    image: otel-demo-app
+    build:
+      context: .
+      dockerfile: OtelDemoApp/Dockerfile
+      args:
+        - configuration=Debug
+    ports:
+      - 5213:5213
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTPS_PORT=443
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317
+    volumes:
+      - ~/.vsdbg:/remote_debugger:rw
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  tempo_data:
+  loki_data:
